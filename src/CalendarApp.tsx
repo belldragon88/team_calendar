@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, AlignLeft, Clock,
   User, Tag as TagIcon, LayoutGrid, CalendarDays, Search, X, MessageSquare, Send,
-  Users, MapPin
+  Users, MapPin, Settings, List
 } from 'lucide-react';
 import {
   format,
@@ -452,7 +452,7 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans overflow-hidden">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 z-10 shadow-sm shrink-0">
-        <div className="max-w-screen-2xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-screen-2xl mx-auto px-4 md:px-8 py-3 min-h-[4rem] flex flex-wrap items-center justify-between gap-y-3 gap-x-2">
           <div className="flex items-center gap-3">
             <button onClick={onLeaveTeam} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors mr-1">
               <ChevronLeft size={20} />
@@ -465,17 +465,32 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
             </h1>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4 ml-auto flex-wrap justify-end">
+            {/* Global Add Event Button */}
+            <button
+              onClick={() => handleDateClick(currentDate)}
+              className="flex flex-1 md:flex-none justify-center items-center gap-1.5 md:gap-2 bg-brand-500 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium hover:bg-brand-600 transition-colors shadow-sm text-sm"
+            >
+              <Plus size={16} />
+              <span className="md:inline">Add Event</span>
+            </button>
+
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-transparent hover:border-brand-200"
             >
               <TagIcon size={16} /> 설정
             </button>
-            <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block"></div>
 
-            <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 mr-2">
-              <button onClick={() => setViewMode('month')} className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'month' ? 'bg-white shadow-sm text-brand-600' : 'text-slate-500 hover:text-slate-700'}`}>
+            {/* Small screen settings button */}
+            <button onClick={() => setIsSettingsOpen(true)} className="sm:hidden p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg border border-transparent">
+              <Settings size={18} />
+            </button>
+
+            <div className="w-px h-6 bg-slate-200 mx-0 md:mx-1 hidden sm:block"></div>
+
+            <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 mr-2 md:mr-0 shrink-0">
+              <button onClick={() => setViewMode('month')} className={`flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'month' ? 'bg-white shadow-sm text-brand-600' : 'text-slate-500 hover:text-slate-700'}`}>
                 <LayoutGrid size={16} /> <span className="hidden sm:block leading-none">Month</span>
               </button>
               <button onClick={() => setViewMode('day')} className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'day' ? 'bg-white shadow-sm text-brand-600' : 'text-slate-500 hover:text-slate-700'}`}>
