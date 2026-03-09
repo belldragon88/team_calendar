@@ -46,7 +46,7 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [newCommentText, setNewCommentText] = useState('');
-  const [currentUser] = useState('Current User');
+
 
   // Form State for Add/Edit
   const [formData, setFormData] = useState({
