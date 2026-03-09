@@ -21,6 +21,7 @@ export interface CalendarEvent {
     date: string; // YYYY-MM-DD
     time: string; // HH:MM
     durationMinutes: number; // For block height
+    isAllDay?: boolean;
     title: string;
     creator: string;
     attendees: string;
