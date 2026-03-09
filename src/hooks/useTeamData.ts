@@ -98,7 +98,12 @@ export function useTeamData(teamId: string | null) {
         }
 
         const eventRef = doc(db, 'events', event.id);
-        await setDoc(eventRef, event);
+
+        // Firestore SDK crashes if any value is statically `undefined`. 
+        // We strip undefined properties cleanly by parsing a stringified instance.
+        const cleanEvent = JSON.parse(JSON.stringify(event));
+
+        await setDoc(eventRef, cleanEvent);
     };
 
     const deleteEvent = async (eventId: string) => {
