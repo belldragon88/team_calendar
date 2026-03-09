@@ -42,33 +42,41 @@ export function useTeamData(teamId: string | null) {
 
         const teamRef = doc(db, 'teams', teamId);
 
-        // Ensure team exists or initialize
+        let unsubTeam: () => void;
+        let unsubEvents: () => void;
+
+        // Fetch team once to initialize if missing
         getDoc(teamRef).then(snap => {
             if (!snap.exists()) {
                 setDoc(teamRef, { id: teamId, displayName: teamId, tags: DEFAULT_TAGS });
             }
-        });
 
-        const unsubTeam = onSnapshot(teamRef, (doc) => {
-            if (doc.exists()) {
-                setTeam(doc.data() as Team);
+            // Start listening after confirming it exists/created
+            unsubTeam = onSnapshot(teamRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    setTeam(docSnap.data() as Team);
+                }
+            });
+
+            // Start listening to events
+            if (db) {
+                const q = query(collection(db, 'events'), where('teamId', '==', teamId));
+                unsubEvents = onSnapshot(q, (snapshot) => {
+                    const dbEvents: CalendarEvent[] = [];
+                    snapshot.forEach(docSnap => {
+                        dbEvents.push({ ...docSnap.data(), id: docSnap.id } as CalendarEvent);
+                    });
+                    setEvents(dbEvents);
+                    setLoading(false);
+                });
             }
         });
 
-        const q = query(collection(db, 'events'), where('teamId', '==', teamId));
-        const unsubEvents = onSnapshot(q, (snapshot) => {
-            const dbEvents: CalendarEvent[] = [];
-            snapshot.forEach(doc => {
-                dbEvents.push({ ...doc.data(), id: doc.id } as CalendarEvent);
-            });
-            setEvents(dbEvents);
-            setLoading(false);
-        });
-
         return () => {
-            unsubTeam();
-            unsubEvents();
+            if (unsubTeam) unsubTeam();
+            if (unsubEvents) unsubEvents();
         };
+
     }, [teamId]);
 
     const saveEvent = async (event: CalendarEvent) => {
