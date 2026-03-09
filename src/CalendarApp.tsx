@@ -379,19 +379,21 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
                   </div>
                 </div>
               ))}
+              {/* Add the final 12a (midnight) line to close the grid at the bottom */}
+              <div className="border-t border-slate-200 shrink-0 w-full relative"></div>
             </div>
 
             {/* Time labels axis */}
             <div className="absolute left-0 top-0 bottom-0 w-16 flex flex-col z-10 bg-transparent">
               {hours.map(hour => (
-                <div key={hour} className="relative flex justify-end pr-4 text-xs font-medium text-slate-400 font-mono -mt-2 shrink-0" style={{ height: `${HOUR_HEIGHT}px` }}>
-                  {hour === 0 ? '12a' : hour < 12 ? `${hour}a` : hour === 12 ? '12p' : `${hour - 12}p`}
+                <div key={hour} className="relative flex justify-end pr-4 text-[11px] font-semibold text-slate-400 font-mono shrink-0" style={{ height: `${HOUR_HEIGHT}px` }}>
+                  <span className="-mt-2 relative z-10 bg-slate-50/80 px-1 leading-none h-fit">{hour === 0 ? '12a' : hour < 12 ? `${hour}a` : hour === 12 ? '12p' : `${hour - 12}p`}</span>
                 </div>
               ))}
             </div>
 
             {/* Render Overlapping Events */}
-            <div className="absolute left-16 right-0 top-0 bottom-0 mt-5">
+            <div className="absolute left-16 right-0 top-0 bottom-0">
               {dayEvents.map(event => {
                 // Determine if it's an all-day event
                 const isAllDay = (event as any).isAllDay || event.durationMinutes >= 1440;
@@ -434,21 +436,21 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
                     className={`absolute rounded-lg p-3 border shadow-sm cursor-pointer hover:shadow-md hover:z-20 transition-all overflow-hidden ${colors.tagBg} ${colors.border}`}
                     style={{
                       top: `${topPx}px`,
-                      height: `${heightPx - 2}px`, // Slight gap between stacked items
+                      height: `${Math.max(20, heightPx - 2)}px`, // Slight gap between stacked items, minimum 20px
                       left: `${leftPerc}%`,
                       width: `${widthPerc}%`,
-                      zIndex: 10 + event._col // Ensure later columns overlap slightly if needed or just sit side-by-side cleanly
+                      zIndex: 10 + event._col
                     }}
                   >
                     <div className="flex flex-col h-full">
                       <div className="flex justify-between items-start gap-2">
                         <span className="font-bold text-slate-800 text-sm truncate leading-tight">{event.title}</span>
-                        <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${colors.bg}`}>{event.tag === '기타' && event.customTag ? event.customTag : event.tag}</span>
+                        {heightPx > 40 && <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${colors.bg}`}>{event.tag === '기타' && event.customTag ? event.customTag : event.tag}</span>}
                       </div>
 
-                      {heightPx > 50 && (
+                      {heightPx > 40 && (
                         <div className="text-[11px] font-medium text-slate-600 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-                          <span className="flex items-center gap-1"><Clock size={11} className="opacity-70" /> {event.time} ({event.durationMinutes}m)</span>
+                          <span className="flex items-center gap-1"><Clock size={11} className="opacity-70" /> {event.time}</span>
                           {event.location && <span className="flex items-center gap-1"><MapPin size={11} className="opacity-70" /> {event.location}</span>}
                         </div>
                       )}
@@ -459,12 +461,14 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
 
                       {heightPx > 100 && event.description && <div className="text-[11px] text-slate-500 mt-1 line-clamp-2">{event.description}</div>}
 
-                      <div className="mt-auto pt-1 flex items-center justify-between text-[10px] text-slate-500 opacity-80">
-                        <div className="flex items-center gap-1 shrink-0"><User size={10} /> {event.creator}</div>
-                        {event.comments.length > 0 && (
-                          <div className="flex items-center gap-1 shrink-0 bg-white px-1 rounded shadow-sm"><MessageSquare size={10} /> {event.comments.length}</div>
-                        )}
-                      </div>
+                      {heightPx > 60 && (
+                        <div className="mt-auto pt-1 flex items-center justify-between text-[10px] text-slate-500 opacity-80">
+                          <div className="flex items-center gap-1 shrink-0"><User size={10} /> {event.creator}</div>
+                          {event.comments.length > 0 && (
+                            <div className="flex items-center gap-1 shrink-0 bg-white px-1 rounded shadow-sm"><MessageSquare size={10} /> {event.comments.length}</div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
