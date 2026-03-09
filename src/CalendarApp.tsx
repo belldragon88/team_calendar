@@ -53,6 +53,7 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
     title: '',
     time: '09:00',
     durationMinutes: 60,
+    isAllDay: false,
     creator: '',
     attendees: '',
     location: '',
@@ -79,7 +80,7 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
   const handleDateClick = (day: Date, timeStr: string = '09:00') => {
     setSelectedDate(day);
     setFormData({
-      title: '', time: timeStr, durationMinutes: 60, creator: '',
+      title: '', time: timeStr, durationMinutes: 60, isAllDay: false, creator: '',
       attendees: '', location: '', description: '', tag: defaultTag, customTag: ''
     });
     setIsAddModalOpen(true);
@@ -90,6 +91,7 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
     setSelectedEvent(event);
     setFormData({
       title: event.title, time: event.time, durationMinutes: event.durationMinutes,
+      isAllDay: event.isAllDay || false,
       creator: event.creator, attendees: event.attendees, location: event.location,
       description: event.description || '', tag: event.tag, customTag: event.customTag || ''
     });
@@ -109,7 +111,8 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
     if (isEditMode && selectedEvent) {
       // Update existing
       const updatedEvent = {
-        ...selectedEvent, title: formData.title, time: formData.time, durationMinutes: Number(formData.durationMinutes),
+        ...selectedEvent, title: formData.title, time: formData.isAllDay ? '00:00' : formData.time, durationMinutes: formData.isAllDay ? 1440 : Number(formData.durationMinutes),
+        isAllDay: formData.isAllDay,
         description: formData.description, tag: formData.tag, customTag: formData.tag === '기타' ? formData.customTag : undefined,
         creator: formData.creator, attendees: formData.attendees, location: formData.location
       };
@@ -119,17 +122,18 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
     } else {
       // Add new
       if (!selectedDate) return;
-      const eventToAdd: CalendarEvent = {
+      const eventToAdd: CalendarEvent & { isAllDay?: boolean } = {
         id: crypto.randomUUID(),
         teamId,
         date: format(selectedDate, 'yyyy-MM-dd'),
-        time: formData.time, durationMinutes: Number(formData.durationMinutes),
+        time: formData.isAllDay ? '00:00' : formData.time, durationMinutes: formData.isAllDay ? 1440 : Number(formData.durationMinutes),
+        isAllDay: formData.isAllDay,
         title: formData.title, description: formData.description,
         creator: formData.creator, attendees: formData.attendees, location: formData.location,
         tag: formData.tag, customTag: formData.tag === '기타' ? formData.customTag : undefined,
         comments: []
       };
-      saveEvent(eventToAdd);
+      saveEvent(eventToAdd as CalendarEvent);
       setIsAddModalOpen(false);
     }
   };
@@ -387,16 +391,41 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
             </div>
 
             {/* Render Overlapping Events */}
-            <div className="absolute left-16 right-0 top-0 bottom-0">
+            <div className="absolute left-16 right-0 top-0 bottom-0 mt-5">
               {dayEvents.map(event => {
+                // Determine if it's an all-day event
+                const isAllDay = (event as any).isAllDay || event.durationMinutes >= 1440;
+
                 const topPx = (event._startMinutes / 60) * HOUR_HEIGHT;
                 const heightPx = (event.durationMinutes / 60) * HOUR_HEIGHT;
 
                 // Width calculation based on overlap columns
-                const widthPerc = 100 / event._maxCols;
-                const leftPerc = widthPerc * event._col;
+                const widthPerc = isAllDay ? 100 : 100 / event._maxCols;
+                const leftPerc = isAllDay ? 0 : widthPerc * event._col;
 
                 const colors = TAG_MAP[event.tag] || { bg: 'bg-slate-500 text-white', text: 'text-slate-600', border: 'border-slate-200', tagBg: 'bg-slate-50' };
+
+                if (isAllDay) {
+                  return (
+                    <div
+                      key={event.id}
+                      onClick={(e) => handleOpenEventDetails(e, event)}
+                      className={`absolute rounded-lg p-2 border shadow-sm cursor-pointer hover:shadow-md hover:z-20 transition-all overflow-hidden ${colors.tagBg} ${colors.border}`}
+                      style={{
+                        top: `0px`, // Stick to the very top
+                        height: `auto`, // Let content define height
+                        left: `${leftPerc}%`,
+                        width: `${widthPerc}%`,
+                        zIndex: 40 + event._col // Ensure all day events stay on top of the grid
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-bold ${colors.bg}`}>All Day</span>
+                        <span className="font-bold text-slate-800 text-sm truncate">{event.title}</span>
+                      </div>
+                    </div>
+                  );
+                }
 
                 return (
                   <div
@@ -539,28 +568,44 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
                 <input type="text" required autoFocus value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none transition-all placeholder:text-slate-400 font-medium" placeholder="Event title" />
               </div>
 
+              {/* All Day Toggle */}
+              <div className="md:col-span-2 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="allDay"
+                  checked={formData.isAllDay}
+                  onChange={(e) => setFormData({ ...formData, isAllDay: e.target.checked })}
+                  className="w-4 h-4 text-brand-600 bg-slate-100 border-slate-300 rounded focus:ring-brand-500"
+                />
+                <label htmlFor="allDay" className="text-sm font-semibold text-slate-700 cursor-pointer select-none">All Day Event</label>
+              </div>
+
               {/* Row 2: Time & Duration */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Start Time</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Clock size={16} className="text-slate-400" /></div>
-                  <input type="time" required value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none font-medium" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Duration (Minutes)</label>
-                <select value={formData.durationMinutes} onChange={e => setFormData({ ...formData, durationMinutes: Number(e.target.value) })} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none font-medium">
-                  <option value={15}>15 Min</option>
-                  <option value={30}>30 Min</option>
-                  <option value={45}>45 Min</option>
-                  <option value={60}>1 Hour</option>
-                  <option value={90}>1.5 Hours</option>
-                  <option value={120}>2 Hours</option>
-                  <option value={180}>3 Hours</option>
-                  <option value={240}>4 Hours</option>
-                  <option value={480}>All Day (8 Hours)</option>
-                </select>
-              </div>
+              {!formData.isAllDay && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Start Time</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Clock size={16} className="text-slate-400" /></div>
+                      <input type="time" required value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none font-medium" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Duration (Minutes)</label>
+                    <select value={formData.durationMinutes} onChange={e => setFormData({ ...formData, durationMinutes: Number(e.target.value) })} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none font-medium">
+                      <option value={15}>15 Min</option>
+                      <option value={30}>30 Min</option>
+                      <option value={45}>45 Min</option>
+                      <option value={60}>1 Hour</option>
+                      <option value={90}>1.5 Hours</option>
+                      <option value={120}>2 Hours</option>
+                      <option value={180}>3 Hours</option>
+                      <option value={240}>4 Hours</option>
+                      <option value={480}>8 Hours</option>
+                    </select>
+                  </div>
+                </>
+              )}
 
               {/* Row 3: Creator & Attendees */}
               <div>
