@@ -1,5 +1,8 @@
-import { useState } from 'react';
-import { CalendarIcon, Users, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CalendarIcon, Users, ArrowRight, Loader2 } from 'lucide-react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db, isFirebaseConfigured } from './firebase';
+import type { Team } from './types';
 
 interface LandingProps {
     onJoinTeam: (teamId: string) => void;
@@ -7,6 +10,36 @@ interface LandingProps {
 
 export function Landing({ onJoinTeam }: LandingProps) {
     const [teamName, setTeamName] = useState('');
+    const [existingTeams, setExistingTeams] = useState<Team[]>([]);
+    const [loadingTeams, setLoadingTeams] = useState(true);
+
+    useEffect(() => {
+        const fetchTeams = async () => {
+            if (!isFirebaseConfigured || !db) {
+                // Load local fallback teams
+                const saved = localStorage.getItem('local_teams');
+                if (saved) {
+                    setExistingTeams(Object.values(JSON.parse(saved)));
+                }
+                setLoadingTeams(false);
+                return;
+            }
+
+            try {
+                const querySnapshot = await getDocs(collection(db, 'teams'));
+                const teamsData: Team[] = [];
+                querySnapshot.forEach((doc) => {
+                    teamsData.push(doc.data() as Team);
+                });
+                setExistingTeams(teamsData);
+            } catch (error) {
+                console.error("Error fetching teams:", error);
+            }
+            setLoadingTeams(false);
+        };
+
+        fetchTeams();
+    }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,7 +70,7 @@ export function Landing({ onJoinTeam }: LandingProps) {
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <div>
-                        <label className="block text-sm font-bold text-slate-600 uppercase tracking-wide mb-2">Team Name</label>
+                        <label className="block text-sm font-bold text-slate-600 uppercase tracking-wide mb-2">Create New Team</label>
                         <input
                             type="text"
                             required
@@ -53,9 +86,32 @@ export function Landing({ onJoinTeam }: LandingProps) {
                         disabled={!teamName.trim()}
                         className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-brand-500 text-white font-bold rounded-xl shadow-md hover:bg-brand-600 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100 mt-2"
                     >
-                        Enter Team Space <ArrowRight size={20} />
+                        Create & Enter <ArrowRight size={20} />
                     </button>
                 </form>
+
+                <div className="mt-8 border-t border-slate-100 pt-8">
+                    <label className="block text-sm font-bold text-slate-600 uppercase tracking-wide mb-4">Or Select Existing Team</label>
+                    {loadingTeams ? (
+                        <div className="flex justify-center p-4">
+                            <Loader2 className="w-6 h-6 animate-spin text-brand-400" />
+                        </div>
+                    ) : existingTeams.length > 0 ? (
+                        <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                            {existingTeams.map(team => (
+                                <button
+                                    key={team.id}
+                                    onClick={() => onJoinTeam(team.id)}
+                                    className="w-full text-left px-4 py-3 bg-slate-50 hover:bg-brand-50 hover:text-brand-700 border border-slate-100 hover:border-brand-200 rounded-xl font-medium transition-colors"
+                                >
+                                    {team.displayName}
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-center text-slate-400 text-sm py-4">No established teams yet.</p>
+                    )}
+                </div>
             </div>
 
             {/* Made by Footer */}

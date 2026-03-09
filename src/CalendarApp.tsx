@@ -143,14 +143,16 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
     }
   };
 
+  const [commentAuthor, setCommentAuthor] = useState('');
+
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedEvent || !newCommentText.trim()) return;
+    if (!selectedEvent || !newCommentText.trim() || !commentAuthor.trim()) return;
 
     const newComment: Comment = {
       id: crypto.randomUUID(),
       text: newCommentText,
-      author: currentUser,
+      author: commentAuthor,
       timestamp: new Date().toISOString()
     };
 
@@ -771,7 +773,14 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
               </div>
 
               {/* Comment Input */}
-              <div className="p-4 bg-white border-t border-slate-200 shrink-0">
+              <div className="p-4 bg-white border-t border-slate-200 shrink-0 flex flex-col gap-2">
+                <input
+                  type="text"
+                  value={commentAuthor}
+                  onChange={e => setCommentAuthor(e.target.value)}
+                  placeholder="Your Name (Required)"
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none text-sm font-medium transition-all shadow-inner"
+                />
                 <form onSubmit={handleAddComment} className="flex gap-2">
                   <input
                     type="text"
@@ -782,7 +791,7 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
                   />
                   <button
                     type="submit"
-                    disabled={!newCommentText.trim()}
+                    disabled={!newCommentText.trim() || !commentAuthor.trim()}
                     className="p-3 bg-brand-500 text-white rounded-xl hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md active:scale-95 flex items-center justify-center"
                   >
                     <Send size={18} className="translate-x-[-1px] translate-y-[1px]" />
