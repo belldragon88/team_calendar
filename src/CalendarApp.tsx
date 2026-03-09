@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, AlignLeft, Clock,
   User, Tag as TagIcon, LayoutGrid, CalendarDays, Search, X, MessageSquare, Send,
-  Users, MapPin, Settings, List
+  Users, MapPin, Settings
 } from 'lucide-react';
 import {
   format,
