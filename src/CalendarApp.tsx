@@ -274,20 +274,36 @@ export function CalendarApp({ teamId, onLeaveTeam }: { teamId: string, onLeaveTe
               </div>
             </div>
 
-            <div className="flex-1 flex flex-col gap-1 overflow-y-auto no-scrollbar">
+            <div className="flex-1 flex flex-col gap-1 overflow-y-auto no-scrollbar relative min-h-[20px]">
               {dayEvents.map(event => {
                 const colors = TAG_MAP[event.tag] || { bg: 'bg-slate-500 text-white', text: 'text-slate-600', border: 'border-slate-200', tagBg: 'bg-slate-50' };
+                // Extract just the background color class (e.g., 'bg-rose-500') from the composed class
+                const dotColorClass = colors.bg.split(' ')[0];
+
                 return (
-                  <div
-                    key={event.id}
-                    onClick={(e) => handleOpenEventDetails(e, event)}
-                    className={`text-[11px] px-1.5 py-1 rounded shadow-sm cursor-pointer hover:brightness-95 transition-all flex flex-col ${colors.bg}`}
-                  >
-                    <div className="font-semibold truncate leading-tight flex justify-between items-center">
-                      <span>{event.title}</span>
-                      {event.comments.length > 0 && <span className="text-[9px] bg-black/20 px-1 rounded-sm ml-1">{event.comments.length}</span>}
+                  <div key={event.id}>
+                    {/* Desktop View: Full Event Card */}
+                    <div
+                      onClick={(e) => handleOpenEventDetails(e, event)}
+                      className={`hidden md:flex text-[11px] px-1.5 py-1 rounded shadow-sm cursor-pointer hover:brightness-95 transition-all flex-col ${colors.bg}`}
+                    >
+                      <div className="font-semibold truncate leading-tight flex justify-between items-center">
+                        <span>{event.title}</span>
+                        {event.comments.length > 0 && <span className="text-[9px] bg-black/20 px-1 rounded-sm ml-1">{event.comments.length}</span>}
+                      </div>
+                      <div className="text-[9px] opacity-90 truncate leading-tight mt-0.5">{event.time} • {event.tag === '기타' ? event.customTag : event.tag}</div>
                     </div>
-                    <div className="text-[9px] opacity-90 truncate leading-tight mt-0.5">{event.time} • {event.tag === '기타' ? event.customTag : event.tag}</div>
+
+                    {/* Mobile View: Dots */}
+                    <div
+                      title={event.title}
+                      className={`md:hidden absolute w-2 h-2 rounded-full ${dotColorClass} animate-fade-in shadow-sm`}
+                      style={{
+                        // Distribute dots horizontally at the bottom of the date cell
+                        bottom: '6px',
+                        left: `${8 + (dayEvents.indexOf(event) * 12)}px`
+                      }}
+                    />
                   </div>
                 );
               })}
